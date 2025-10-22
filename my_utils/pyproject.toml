@@ -1,0 +1,9 @@
+[project]
+name = "my-utils"
+version = "0.1.0"
+description = "Common helper functions for all my projects"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

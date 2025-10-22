@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# custom
+neural_data/
+saved_models/
+zTODO.txt
