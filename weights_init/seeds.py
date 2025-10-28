@@ -38,15 +38,12 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 # ---- Main loop ----
-init_regimes = ["constant", "uniform", "normal", "xavier_u", "xavier_n", "kaiming_u", "kaiming_n", "orthogonal"]
+init_regimes = ["constant", "uniform", "normal", "xavier_u", "xavier_n", "kaiming_u", "kaiming_n", "orthogonal", "trained"]
 num_seeds = 10
 save_dir = '../saved_models/untrained/weights/'
 
-# clear and recreate save directory
-if os.path.exists(save_dir):
-    for f in os.listdir(save_dir):
-        os.remove(os.path.join(save_dir, f))
-else:
+
+if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
 
@@ -54,17 +51,20 @@ for method in init_regimes:
 
     for seed in range(num_seeds):
         set_seed(seed)
-        # print seeds
         print(f"Initialization method: {method}, Seed: {torch.initial_seed()}")
-
-        model = models.vgg16(weights=None)
-
-        # Apply initialization
-        model.apply(lambda m: init_weights(m, method))
+        if method == "trained":
+            # Load pretrained model
+            model = models.vgg16(weights='IMAGENET1K_V1')
+            
+        else:
+            # Initialize untrained model
+            model = models.vgg16(weights=None)
+            # Apply initialization
+            model.apply(lambda m: init_weights(m, method))
 
         model_save_path = '../saved_models/untrained/weights/vgg16_' + method + f'_seed{seed}.pth'
         torch.save(model.state_dict(), model_save_path)
         
-        if method == "constant":
+        if (method == "constant") or (method == "trained"):
             # only need one model for constant initialization
             break
