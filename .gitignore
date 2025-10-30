@@ -11,5 +11,6 @@ wheels/
 
 # custom
 neural_data/
+data_backup/
 saved_models/
 zTODO.txt

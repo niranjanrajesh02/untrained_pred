@@ -36,8 +36,11 @@ def compute_linear_predictivity(X, Y, k_folds=5):
       Y_pred = predictor.predict(normalize(X_test))
       best_alpha = predictor.alpha_
       across_neuron_corrs =  []
-      Y_predc = Y_pred - np.mean(Y_pred, axis=0, keepdims=True)
-      Y_testc = Y_test - np.mean(Y_test, axis=0, keepdims=True)
+      Y_predc = Y_pred - np.nanmean(Y_pred, axis=0, keepdims=True)
+      Y_testc = Y_test - np.nanmean(Y_test, axis=0, keepdims=True)
+      Y_predc = Y_predc.astype(np.float64)
+      Y_testc = Y_testc.astype(np.float64)
+
 
       corr_matrix = (Y_predc.T @ Y_testc) / (
           np.sqrt(np.sum(Y_predc**2, axis=0, keepdims=True)).T
@@ -68,13 +71,20 @@ def compute_RSA(X,Y, dist_metric='correlation', corr_metric='pearson'):
 
     X_dist_flat = X_dist[np.triu_indices(X_dist.shape[0], k=1)]
     Y_dist_flat = Y_dist[np.triu_indices(Y_dist.shape[0], k=1)]
+    
+    valid_indices = ~np.isnan(X_dist_flat) & ~np.isnan(Y_dist_flat)
+    X_dist_flat = X_dist_flat[valid_indices]
+    Y_dist_flat = Y_dist_flat[valid_indices]
 
-    if corr_metric=='pearson':
-      rsa_corr = [pearsonr(X_dist_flat, Y_dist_flat)[0]]
-    elif corr_metric=='spearman':
-      rsa_corr = [spearmanr(X_dist_flat, Y_dist_flat)[0]]
-    elif corr_metric=='kendall':
-      rsa_corr = [kendalltau(X_dist_flat, Y_dist_flat)[0]]
+    if len(X_dist_flat) < 2:
+        rsa_corr= [np.nan]
+    else:
+      if corr_metric=='pearson':
+        rsa_corr = [pearsonr(X_dist_flat, Y_dist_flat)[0]]
+      elif corr_metric=='spearman':
+        rsa_corr = [spearmanr(X_dist_flat, Y_dist_flat)[0]]
+      elif corr_metric=='kendall':
+        rsa_corr = [kendalltau(X_dist_flat, Y_dist_flat)[0]]
 
     
     return rsa_corr
