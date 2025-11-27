@@ -1,0 +1,5 @@
+nsd_path: /home/nirajesh/untrained_pred/neural_data/tripleN/images
+triplen_path: /home/nirajesh/untrained_pred/neural_data/tripleN/filtered_units_by_roi_all.csv
+k_folds: 5
+normalize: False
+device_id: 2
