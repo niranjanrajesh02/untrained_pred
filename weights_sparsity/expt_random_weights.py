@@ -8,10 +8,10 @@ from pyaml_env import parse_config, BaseConfig
 from my_utils.alignment_metrics import compute_linear_predictivity, compute_RSA
 from my_utils.neural_data import get_tripleN_fr, get_NSD_dataset_imgs
 from my_utils.model_helpers import init_vgg, get_layer_names, get_layer_activations
-from my_utils.sparsify import sparsify_units
+from my_utils.sparsify import sparsify_weights
 
 
-def expt_main(sparsify_layers='early'):
+def expt_main():
   config = BaseConfig(parse_config('./config.yaml'))
   neural_data = get_tripleN_fr(config.triplen_path)
   images_dl = get_NSD_dataset_imgs(config.nsd_path)
@@ -24,12 +24,12 @@ def expt_main(sparsify_layers='early'):
   sparse_k_levels = [0.1, 0.25, 0.5, 0.75, 1.0] # 0% to 100% sparsity
 
 
-
-  assert sparsify_layers in ['early', 'middle', 'late', 'all'], "sparsify_layers must be one of ['early', 'middle', 'late', 'all']"
+  assert config.sparsify_layers in ['early', 'middle', 'late', 'all'], "sparsify_layers must be one of ['early', 'middle', 'late', 'all']"
 
   
-  results_path = f"./weights_sparsity/expt_results/random_units/vgg16/{sparsify_layers}_layers/"
-                    
+  results_path = f"./weights_sparsity/expt_results/random_weights/vgg16/{config.sparsify_layers}_layers/"
+
+
   seeds_to_test = [0]  # For simplicity, using a single seed here
   for init in vgg_inits:
     for si, seed in enumerate(seeds_to_test):
@@ -45,9 +45,11 @@ def expt_main(sparsify_layers='early'):
         rsa_results = pd.DataFrame(index=range(len(seeds_to_test)), columns=range(len(layer_names)))
         
         vgg = init_vgg(seed, init)
-        vgg_sparse = sparsify_units(vgg, sparsity_k=k, layers=sparsify_layers)
-        print(f'Running init: {init}, sparsity level: {k}, seed: {seed}, layers: {sparsify_layers}')
-
+        vgg_sparse = sparsify_weights(vgg, sparsity_k=k, layers=config.sparsify_layers, conv_global=config.sparsify_conv_global)
+        
+        print(f'Running init: {init}, sparsity level: {k}, seed: {seed}, layers: {config.sparsify_layers}, conv_global: {config.sparsify_conv_global}')
+        
+        
         for li, layer_name in enumerate(tqdm(layer_names)):
           # extract activations
           acts = get_layer_activations(vgg_sparse, layer_name, images_dl, device_id=config.device_id)
@@ -69,5 +71,4 @@ def expt_main(sparsify_layers='early'):
         
     
 if __name__ == "__main__":
-    expt_main(sparsify_layers='late')
-    expt_main(sparsify_layers='all')
+    expt_main()

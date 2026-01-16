@@ -17,3 +17,5 @@ data_backup/
 saved_models/
 zTODO.txt
 scratch.txt
+*.csv
+*.pkl

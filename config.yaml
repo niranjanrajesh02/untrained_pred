@@ -1,5 +1,12 @@
 nsd_path: /home/nirajesh/untrained_pred/neural_data/tripleN/images
 triplen_path: /home/nirajesh/untrained_pred/neural_data/tripleN/filtered_units_by_roi_all.csv
+imagenet_train: /mnt/cogsci/ILSVRC2012/training/
+imagenet_val: /mnt/cogsci/KhoslaLab/ILSVRC2012/valid
 k_folds: 5
 normalize: False
-device_id: 2
+device_id: 3
+
+# Sparsity experiment parameters
+arch: all
+sparsify_layers: all
+sparse_type: random_weights

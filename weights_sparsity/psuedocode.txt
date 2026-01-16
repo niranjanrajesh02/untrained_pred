@@ -1,0 +1,62 @@
+Random Feature Sparsity Algorithm
+
+init VGG_untrained, VGG_trained
+init sparsity_k_range = [0, 100]
+init rand_seeds = [0, 10]
+inti tripleN_data, tripleN_imgs
+
+for vgg:
+    for seed:
+        for k in sparsity_k_range:
+            vgg_predicticity = table() # seeds x layers
+            vgg_rsa = table() # seeds x layers
+            vgg_sparse = sparsify_features(vgg, k, seed, all_layers=True)  #replace with sparsify_units for unit analysis
+            
+            for layer:
+                vgg_sparse_acts = extract_acts(vgg_sparse, tripleN_imgs, layer)
+
+                linpred = linear_predictivity(vgg_sparse_acts, tripleN_data)
+                rsa_score = rsa(vgg_sparse_acts, tripleN_data)
+
+                vgg_predictivity(seed, layer) = linpred
+                vgg_rsa(seed, layer) = rsa_score
+            
+            save_tables vgg_rsa, vgg_predicticity
+
+
+sparsify_features(model, k) # all_layer
+    for layer:
+        if layer == conv:
+            num_weights = num_filters * filter_size
+            num_zero_weights = num_weights * (1-k)
+            num_zero_weights_per_filter = num_zero_weights / num_filters
+
+            for filter:
+                zero_weights(filter, num_zero_weights_per_filter)
+
+        elif layer == fc:
+            num_weights = f_in * f_out
+            num_zero_weights = num_weights * (1-k)
+
+            zero_weights(W, num_zero_weights)
+            
+
+        
+
+
+
+Sparsity Performance Algorithm
+
+init VGG_trained
+init sparsity_k_range = [0, 100]
+init layers_to_probe
+init imagenet_tr, imagenet_val
+
+vgg_performance = table() # k_vals x num_layers_to_probe
+for k in sparsity_k_range:
+    vgg_sparse = sparsify_features(vgg, k, seed, all_layers=True)
+    for layer_to_probe:
+        val_acc = train_linear_probe(vgg, layer_to_probe, imagenet_tr, imagenet_val)
+        vgg_performance(k, layer) = val_acc
+        
+    save_tables vgg_performance

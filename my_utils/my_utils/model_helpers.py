@@ -6,8 +6,6 @@ import torch.nn.init as init
 from torchvision import models
 
 
-
-
 ### --- Model Initialization Helpers --- ###
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -61,6 +59,93 @@ def init_vgg(seed=0, regime='kaiming_n'):
     vgg = ModelWithInputLayer(vgg)
     return vgg
     
+
+def init_model(model_name, seed=0, regime='kaiming_n'):
+    assert model_name in [
+        'vgg16',
+        'resnet18',
+        'resnet50',
+        'convnext_b',
+        'vit_b_16',
+        'dino_resnet50',
+        'mocov3_resnet50',
+        'simclr_resnet50'
+    ]
+
+    model = None
+    set_seed(seed)
+    if model_name == 'vgg16':
+        if regime == "trained":
+            model = models.vgg16(weights="IMAGENET1K_V1")
+        else:
+            model = models.vgg16(weights=None)
+            model.apply(lambda m: init_weights(m, method=regime))
+    elif model_name == 'resnet18':
+        if regime == "trained":
+            model = models.resnet18(weights="IMAGENET1K_V1")
+        else:
+            model = models.resnet18(weights=None)
+            model.apply(lambda m: init_weights(m, method=regime))
+    elif model_name == 'resnet50':
+        if regime == "trained":
+            model = models.resnet50(weights="IMAGENET1K_V1")
+        else:
+            model = models.resnet50(weights=None)
+            model.apply(lambda m: init_weights(m, method=regime))
+    elif model_name == 'convnext_b':
+        if regime == "trained":
+            model = models.convnext_base(weights="IMAGENET1K_V1")
+        else:
+            model = models.convnext_base(weights=None)
+            model.apply(lambda m: init_weights(m, method=regime))
+    elif model_name == 'vit_b_16':
+        if regime == "trained":
+            model = models.vit_b_16(weights="IMAGENET1K_V1")
+        else:
+            model = models.vit_b_16(weights=None)
+            model.apply(lambda m: init_weights(m, method=regime))
+
+    ## SSL models - have to be trained
+
+    elif model_name == 'dino_resnet50':
+        if regime == "trained":
+            model = torch.hub.load(
+                'facebookresearch/dino:main',
+                'dino_resnet50'
+            )
+    
+
+
+    elif model_name == 'mocov3_resnet50':
+        ckpt = torch.hub.load_state_dict_from_url(
+                "https://dl.fbaipublicfiles.com/moco-v3/r-50-1000ep/r-50-1000ep.pth.tar",
+                map_location="cpu"
+        )
+        state_dict = ckpt["state_dict"]
+
+        # remove momentum / projector / prefix
+        new_state = {}
+        for k, v in state_dict.items():
+            if k.startswith("module.base_encoder."):
+                new_state[k.replace("module.base_encoder.", "")] = v
+
+        model.load_state_dict(new_state, strict=False)
+
+    
+    # add input wrapper
+    model = ModelWithInputLayer(model)
+    return model    
+
+def count_nonzero_weights(model):
+    total_weights = 0
+    nonzero_weights = 0
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            total_weights += param.numel()
+            nonzero_weights += torch.sum(param != 0).item()
+    return nonzero_weights, total_weights
+
+
 def get_layer_names(model):
     layer_names = []
     for name, layer in model.named_modules():
@@ -111,7 +196,7 @@ def get_layer_activations(model, layer_name, image_data, device_id=0):
     handle.remove()
   
     acts = torch.cat(activations, dim=0)
-    shape_info = acts.shape
+    
     # For convolutional layers, apply adaptive average pooling to reduce 
     # spatial dimensions and approx match target_dim when flattened
     target_dim = 4096 # fixing due to fc dimensions in VGG16
